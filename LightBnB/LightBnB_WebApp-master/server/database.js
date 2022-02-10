@@ -20,7 +20,7 @@ const getUserWithEmail = function(email) {
   const queryString = `
   SELECT *
   FROM users
-  WHERE email = $1;`;
+  WHERE email = $1;`
   const values = [email];
 
   return db.query(queryString, values)
@@ -55,12 +55,12 @@ exports.getUserWithId = getUserWithId;
 const addUser =  function(user) {
   const queryString = `
   INSERT INTO users(name, email, password)
-  VALUES ($1, $2, $3);`;
+  VALUES ($1, $2, $3)
+  RETURNING *;`;
   const values = [user.name, user.email, user.password];
-  console.log(user)
 
   return db.query(queryString, values)
-  .then(res => res.rows)
+  .then(res => res.rows[0])
   .catch(err => console.log(err));
 
 }
@@ -88,11 +88,17 @@ exports.getAllReservations = getAllReservations;
  */
 
  const getAllProperties = (options, limit = 10) => {
-  return db.query(`
-    SELECT * 
-    FROM properties
-    LIMIT $1;
-    `, [limit])
+  
+  const queryString = `
+  SELECT properties.*, avg(property_reviews.rating) as average_rating 
+  FROM properties, property_reviews
+  GROUP BY properties.id
+  ORDER BY cost_per_night
+  LIMIT $1;
+  `
+  const values = [limit]
+  
+  return db.query(queryString, values)
     .then(res => res.rows)
     .catch((err) => {
       console.log(err.message);
